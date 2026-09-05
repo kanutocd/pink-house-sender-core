@@ -1,43 +1,101 @@
-# Sender::Core
+# sender-core
 
-TODO: Delete this and the text below, and describe your gem
+`sender-core` is the channel-neutral Ruby runtime for sender gems such as
+[`sms-sender`](https://github.com/kanutocd/sms-sender) and `email-sender`.
+It provides reusable delivery contracts, provider selection, failover,
+resilience, state, and observability primitives.
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/sender/core`. To experiment with that code, run `bin/console` for an interactive prompt.
+Channel gems remain responsible for channel-specific validation, provider
+adapters, authentication, payload mapping, and response mapping. The shared
+runtime is independent of SMS, email, Rails, Redis, PostgreSQL, provider
+SDKs, and live network services.
+
+## Status
+
+This repository contains the initial gem foundation and design documentation.
+The shared runtime is being extracted from `sms-sender` incrementally and
+backwards-compatibly. See
+[`IMPLEMENTATION.md`](.ignoreme/codex/IMPLEMENTATION.md) for the extraction
+plan and current phase status.
 
 ## Installation
 
-TODO: Replace `UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG` with your gem name right after releasing it to RubyGems.org. Please do not do it earlier due to security reasons. Alternatively, replace this section with instructions to install your gem from git if you don't plan to release to RubyGems.org.
+Add the gem to your application's Gemfile:
 
-Install the gem and add to the application's Gemfile by executing:
-
-```bash
-bundle add UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+```ruby
+gem "sender-core"
 ```
 
-If bundler is not being used to manage dependencies, install the gem by executing:
+Then install it with Bundler:
 
 ```bash
-gem install UPDATE_WITH_YOUR_GEM_NAME_IMMEDIATELY_AFTER_RELEASE_TO_RUBYGEMS_ORG
+bundle install
 ```
 
-## Usage
+## Intended architecture
 
-TODO: Write usage instructions here
+```text
+channel facade
+      |
+sender-core message and delivery contracts
+      |
+election -> router -> channel provider adapter -> HTTP/provider API
+      |
+health, circuit breaker, state store, and observability
+```
+
+`sender-core` is not a standalone email or SMS client. It supplies the
+provider-neutral runtime that channel gems compose into their public APIs.
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake test` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+Install development dependencies with:
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and the created tag, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+```bash
+bin/setup
+```
+
+Run the complete quality harness with:
+
+```bash
+bundle exec rake
+```
+
+The harness runs tests, RuboCop, RBS validation, YARD generation, and a 100%
+YARD documentation coverage check. Tests must remain deterministic and must
+not require credentials, network access, or live provider availability.
+
+Useful individual tasks include:
+
+```bash
+bundle exec rake test
+bundle exec rake rubocop
+bundle exec rake rbs
+bundle exec rake yard
+bundle exec rake yard:coverage
+bundle exec rake build
+bin/console
+```
+
+## Design principles
+
+- Keep the core channel-neutral and provider-independent.
+- Use immutable value objects for delivery context.
+- Make retry and failover policy explicit and bounded.
+- Keep mutable runtime state behind replaceable abstractions.
+- Load providers lazily and keep adapters thin.
+- Prefer standard-library boundaries and minimal dependencies.
+- Keep live integration checks separate from the default quality gate.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/sender-core. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/sender-core/blob/main/CODE_OF_CONDUCT.md).
+Bug reports and pull requests are welcome at
+[github.com/kanutocd/sender-core](https://github.com/kanutocd/sender-core).
+Meaningful user, operator, integration, tooling, and architectural changes
+should be recorded in `CHANGELOG.md` under `Unreleased`.
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+This project is available under the [MIT License](LICENSE.txt).
 
-## Code of Conduct
-
-Everyone interacting in the Sender::Core project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/sender-core/blob/main/CODE_OF_CONDUCT.md).
+See [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md) for community guidelines.

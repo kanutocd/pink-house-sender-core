@@ -2,12 +2,14 @@
 
 require "test_helper"
 
-class Sender::TestCore < Minitest::Test
-  def test_that_it_has_a_version_number
-    refute_nil ::Sender::Core::VERSION
-  end
+module Sender
+  class TestCore < Minitest::Test
+    def test_that_it_has_a_version_number
+      refute_nil ::Sender::Core::VERSION
+    end
 
-  def test_it_does_something_useful
-    assert false
+    def test_error_is_a_standard_error
+      assert_operator Sender::Core::Error, :<, StandardError
+    end
   end
 end
