@@ -5,18 +5,18 @@
 It provides reusable delivery contracts, provider selection, failover,
 resilience, state, and observability primitives.
 
+## Origin
+
+The sender gems were extracted from the Pink House SaaS project to make its
+delivery capabilities reusable, independently testable, and composable across
+communication channels. `sender-core` contains the shared runtime extracted
+from the original application; channel gems remain responsible for their own
+input validation and provider integrations.
+
 Channel gems remain responsible for channel-specific validation, provider
 adapters, authentication, payload mapping, and response mapping. The shared
 runtime is independent of SMS, email, Rails, Redis, PostgreSQL, provider
 SDKs, and live network services.
-
-## Status
-
-This repository contains the initial gem foundation and design documentation.
-The shared runtime is being extracted from `sms-sender` incrementally and
-backwards-compatibly. See
-[`IMPLEMENTATION.md`](.ignoreme/codex/IMPLEMENTATION.md) for the extraction
-plan and current phase status.
 
 ## Installation
 
@@ -32,7 +32,7 @@ Then install it with Bundler:
 bundle install
 ```
 
-## Intended architecture
+## Architecture
 
 ```text
 channel facade
@@ -46,6 +46,25 @@ health, circuit breaker, state store, and observability
 
 `sender-core` is not a standalone email or SMS client. It supplies the
 provider-neutral runtime that channel gems compose into their public APIs.
+
+## Usage
+
+Channel gems normalize their input into a core message, configure one or more
+providers, and delegate delivery to the shared router:
+
+```ruby
+message = Sender::Core::Message.new(
+  to: "recipient@example.test",
+  body: "Hello",
+  requirements: [:email]
+)
+
+delivery = Sender::Core::Router.new(registry: registry).deliver(message)
+```
+
+The returned delivery exposes its normalized status, selected provider,
+provider message ID, attempt history, and error. Channel-specific validation
+and provider request mapping belong in the composing channel gem.
 
 ## Development
 
