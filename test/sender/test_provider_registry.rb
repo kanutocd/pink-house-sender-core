@@ -35,6 +35,17 @@ module Sender
         assert_instance_of FakeProvider, provider
       end
 
+      def test_exposes_advisory_provider_metadata_without_affecting_configuration
+        registry = ProviderRegistry.new(catalog: { fake: { path: "fake/provider", support_level: :experimental } })
+        registry.register(:custom, loader: -> { FakeProvider }, support_level: :deprecated)
+
+        assert_equal :experimental, registry.provider_metadata(:fake).fetch(:support_level)
+        assert_equal :deprecated, registry.provider_metadata(:custom).fetch(:support_level)
+        registry.configure(:fake)
+
+        assert_equal [:fake], registry.configured
+      end
+
       def test_returns_all_configured_provider_instances
         registry = ProviderRegistry.new(catalog: {})
         registry.register(:first, loader: -> { FakeProvider })

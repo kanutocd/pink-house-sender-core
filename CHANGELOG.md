@@ -2,6 +2,8 @@
 
 ### Added
 
+- Add advisory provider `support_level` metadata and registry inspection
+  without using it to enable, disable, or route providers.
 - Provider-neutral message, delivery, capability, delivery-event, and
   normalized-error contracts.
 - Provider configuration, lazy loading, deterministic election, bounded

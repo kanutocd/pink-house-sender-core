@@ -4,7 +4,10 @@ module Sender
   module Core
     # Immutable configuration shared by provider adapters.
     class ProviderConfiguration
-      attr_reader :name, :settings, :enabled, :priority, :capabilities
+      # Advisory integration maturity values exposed by provider registries.
+      SUPPORT_LEVELS = %i[unknown experimental supported fully_tested deprecated].freeze
+
+      attr_reader :name, :settings, :enabled, :priority, :capabilities, :support_level
 
       # @param name [Symbol, String] provider name
       # @param settings [Hash] provider-specific settings
@@ -17,7 +20,17 @@ module Sender
         @enabled = validate_enabled(enabled)
         @priority = validate_priority(priority)
         @capabilities = normalize_capabilities(capabilities)
+        @support_level = :unknown
         freeze
+      end
+
+      # Return a copy with advisory integration metadata attached.
+      # @param value [Symbol] advisory integration maturity metadata
+      # @return [ProviderConfiguration] copied configuration
+      def with_support_level(value)
+        copy = dup
+        copy.instance_variable_set(:@support_level, validate_support_level(value))
+        copy.freeze
       end
 
       # @param key [Symbol, String] setting name
@@ -62,6 +75,15 @@ module Sender
 
       def normalize_capabilities(value)
         Capabilities.normalize(value)
+      end
+
+      def validate_support_level(value)
+        level = value.to_sym
+        return level if SUPPORT_LEVELS.include?(level)
+
+        raise ArgumentError, "support_level must be one of: #{SUPPORT_LEVELS.join(", ")}"
+      rescue NoMethodError
+        raise ArgumentError, "support_level must be symbolizable"
       end
     end
   end

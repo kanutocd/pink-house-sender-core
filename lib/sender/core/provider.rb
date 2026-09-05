@@ -26,6 +26,11 @@ module Sender
         configuration.capabilities
       end
 
+      # @return [Symbol] advisory integration maturity metadata
+      def support_level
+        configuration.support_level
+      end
+
       # Deliver a normalized message through the provider.
       #
       # @raise [NotImplementedError] when called on the base contract

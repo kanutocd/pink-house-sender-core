@@ -5,7 +5,7 @@ module Sender
     # Catalogs, configures, and lazily loads provider adapters.
     class ProviderRegistry
       # Internal metadata for a registered provider.
-      Entry = Struct.new(:name, :loader, :capabilities, keyword_init: true) do
+      Entry = Struct.new(:name, :loader, :capabilities, :support_level, keyword_init: true) do
         def load
           adapter = loader.call
           raise Errors::ConfigurationError, "provider #{name} loader did not return a class" unless adapter.is_a?(Class)
@@ -17,13 +17,14 @@ module Sender
       # Empty by default; channel gems register their provider adapters.
       DEFAULT_PROVIDERS = {}.freeze
 
-      # @param catalog [Hash] provider names mapped to adapter paths
+      # @param catalog [Hash] provider names mapped to adapter paths or metadata
       # @param default_capabilities [Array<Symbol>] catalog entry capabilities
       def initialize(catalog: DEFAULT_PROVIDERS, default_capabilities: [])
         @entries = {}
         @configurations = {}
-        catalog.each do |name, path|
-          register(name, loader: lazy_loader(path), capabilities: default_capabilities)
+        catalog.each do |name, definition|
+          path, support_level = catalog_definition(definition)
+          register(name, loader: lazy_loader(path), capabilities: default_capabilities, support_level:)
         end
       end
 
@@ -37,11 +38,22 @@ module Sender
         @configurations.keys.freeze
       end
 
+      # @return [Hash] advisory metadata for a registered provider
+      def provider_metadata(name)
+        entry = fetch_entry(name)
+        {
+          name: entry.name,
+          capabilities: entry.capabilities,
+          support_level: entry.support_level
+        }.freeze
+      end
+
       # Register a provider without loading its adapter.
       # @param name [Symbol, String] provider name
       # @param loader [#call] callable returning the adapter class
       # @param capabilities [Array<Symbol>] advertised capabilities
-      def register(name, loader:, capabilities: [:sms])
+      # @param support_level [Symbol] advisory integration maturity metadata
+      def register(name, loader:, capabilities: [:sms], support_level: :unknown)
         provider_name = normalize_name(name)
         raise ArgumentError, "loader must respond to call" unless loader.respond_to?(:call)
         raise ArgumentError, "provider already registered: #{provider_name}" if @entries.key?(provider_name)
@@ -49,7 +61,8 @@ module Sender
         @entries[provider_name] = Entry.new(
           name: provider_name,
           loader: loader,
-          capabilities: normalize_capabilities(capabilities)
+          capabilities: Capabilities.normalize(capabilities),
+          support_level: normalize_support_level(support_level)
         ).freeze
         provider_name
       end
@@ -64,7 +77,7 @@ module Sender
           enabled: enabled,
           priority: priority,
           capabilities: capabilities || entry.capabilities
-        )
+        ).with_support_level(entry.support_level)
         @configurations[entry.name] = configuration
       end
 
@@ -86,6 +99,14 @@ module Sender
       end
 
       private
+
+      def catalog_definition(definition)
+        return [definition, :unknown] unless definition.is_a?(Hash)
+
+        path = definition.fetch(:path) { definition.fetch("path") }
+        support_level = definition[:support_level] || definition["support_level"] || :unknown
+        [path, support_level]
+      end
 
       def fetch_entry(name)
         @entries.fetch(normalize_name(name)) do
@@ -110,12 +131,13 @@ module Sender
         raise ArgumentError, "provider name must be symbolizable"
       end
 
-      def normalize_capabilities(value)
-        raise ArgumentError, "capabilities must be an Array" unless value.is_a?(Array)
+      def normalize_support_level(value)
+        level = value.to_sym
+        return level if ProviderConfiguration::SUPPORT_LEVELS.include?(level)
 
-        value.map(&:to_sym).uniq.freeze
+        raise ArgumentError, "support_level must be one of: #{ProviderConfiguration::SUPPORT_LEVELS.join(", ")}"
       rescue NoMethodError
-        raise ArgumentError, "capabilities must contain symbolizable values"
+        raise ArgumentError, "support_level must be symbolizable"
       end
     end
   end

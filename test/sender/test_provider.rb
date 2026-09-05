@@ -17,6 +17,13 @@ module Sender
         assert_same @configuration, @provider.configuration
         assert_equal :semaphore, @provider.name
         assert_equal [:sms], @provider.capabilities
+        assert_equal :unknown, @provider.support_level
+      end
+
+      def test_support_level_is_advisory_metadata
+        configuration = ProviderConfiguration.new(name: :provider).with_support_level(:deprecated)
+
+        assert_equal :deprecated, Provider.new(configuration:).support_level
       end
 
       def test_requires_adapters_to_implement_delivery
