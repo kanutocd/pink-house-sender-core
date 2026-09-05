@@ -9,6 +9,7 @@ gem "irb"
 gem "rake", "~> 13.0"
 
 gem "minitest", "~> 5.16"
+gem "redis-client", "~> 0.24", require: false
 
 gem "rbs", "~> 3.0"
 gem "rubocop", "~> 1.21"

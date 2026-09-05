@@ -152,6 +152,34 @@ module Sender
           assert_raises(Error) { Redis.new(redis: redis).read(:broken) }
         end
 
+        def test_round_trips_runtime_snapshots_through_json
+          redis = FakeRedis.new
+          store = Redis.new(redis: redis)
+          circuit = CircuitBreaker.new
+          health = Health.new
+          health.record_success(latency: 0.25)
+
+          store.write(:circuit, circuit.to_h)
+          store.write(:health, health.to_h)
+
+          restored_circuit = CircuitBreaker.from_h(store.read(:circuit))
+          restored_health = Health.from_h(store.read(:health))
+
+          assert_equal circuit.to_h, restored_circuit.to_h
+          assert_equal health.to_h, restored_health.to_h
+        end
+
+        def test_maps_redis_client_failures_to_backend_errors
+          failing_client = Object.new
+          def failing_client.call(*)
+            raise IOError, "connection closed"
+          end
+
+          error = assert_raises(Redis::BackendError) { Redis.new(redis: failing_client).read(:key) }
+
+          assert_includes error.message, "connection closed"
+        end
+
         def test_validates_redis_configuration
           assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, namespace: "") }
           assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, ttl: 0) }
