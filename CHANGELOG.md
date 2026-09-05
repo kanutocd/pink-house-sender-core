@@ -15,6 +15,10 @@
 - Add a documented state-store contract and atomic memory-backend updates for
   future Redis and custom backend implementations.
 - Add reusable state-store contract tests and deterministic non-nil key rules.
+- Start the Redis state-store backend with namespaced JSON values, TTL support,
+  and optimistic atomic updates through an injected Redis client.
+- Add serializable circuit-breaker and health snapshots and persist them through
+  the router for shared state-store backends.
 
 ### Quality
 

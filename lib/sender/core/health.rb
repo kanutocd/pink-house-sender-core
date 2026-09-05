@@ -55,7 +55,40 @@ module Sender
         end
       end
 
+      # Return the mutable observation history in a JSON-serializable form.
+      # @return [Hash] health state snapshot
+      def to_h
+        @lock.synchronize do
+          {
+            successes: @successes,
+            failures: @failures,
+            consecutive_failures: @consecutive_failures,
+            circuit_state: @circuit_state
+          }
+        end
+      end
+
+      # Rehydrate health history from a state-store snapshot.
+      # @param value [Hash] serialized health state
+      # @return [Health] reconstructed health record
+      def self.from_h(value, observation_window: CircuitBreaker::DEFAULT_OBSERVATION_WINDOW)
+        health = new(observation_window: observation_window)
+        health.send(:load_state, value)
+        health
+      end
+
       private
+
+      def load_state(value)
+        raise ArgumentError, "health state must be a Hash" unless value.is_a?(Hash)
+
+        @successes = value.fetch(:successes, value.fetch("successes", [])).map { |event| event.map(&:to_f) }
+        @failures = value.fetch(:failures, value.fetch("failures", [])).map do |event|
+          [event[0].to_f, event[1].to_f, event[2].to_sym]
+        end
+        @consecutive_failures = value[:consecutive_failures] || value["consecutive_failures"] || 0
+        @circuit_state = (value[:circuit_state] || value["circuit_state"] || :closed).to_sym
+      end
 
       def prune
         cutoff = @clock.call - @observation_window

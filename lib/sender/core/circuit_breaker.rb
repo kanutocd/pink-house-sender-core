@@ -83,7 +83,33 @@ module Sender
         end
       end
 
+      # Return the mutable runtime state in a JSON-serializable form.
+      # @return [Hash] circuit state snapshot
+      def to_h
+        @lock.synchronize do
+          { state: @state, failures: @failures, opened_at: @opened_at, probes: @probes }
+        end
+      end
+
+      # Rehydrate a circuit from a state-store snapshot.
+      # @param value [Hash] serialized circuit state
+      # @return [CircuitBreaker] reconstructed circuit
+      def self.from_h(value, **)
+        circuit = new(**)
+        circuit.send(:load_state, value)
+        circuit
+      end
+
       private
+
+      def load_state(value)
+        raise ArgumentError, "circuit state must be a Hash" unless value.is_a?(Hash)
+
+        @state = value.fetch(:state, value.fetch("state", :closed)).to_sym
+        @failures = value.fetch(:failures, value.fetch("failures", [])).map(&:to_f)
+        @opened_at = value[:opened_at] || value["opened_at"]
+        @probes = value[:probes] || value["probes"] || 0
+      end
 
       def transition_if_ready
         return unless @state == :open && @clock.call - @opened_at >= @open_cooldown

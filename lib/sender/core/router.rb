@@ -33,26 +33,28 @@ module Sender
           started_at = Process.clock_gettime(Process::CLOCK_MONOTONIC)
           delivery = candidate.deliver(message)
           previous_state = circuit_for(candidate).state
-          circuit_for(candidate).record_success
-          if previous_state != circuit_for(candidate).state
+          record_circuit(candidate, &:record_success)
+          current_state = circuit_for(candidate).state
+          if previous_state != current_state
             emit(type: :circuit_transition, provider: candidate.name, from: previous_state,
-                 to: circuit_for(candidate).state)
+                 to: current_state)
           end
-          health_for(candidate).record_success(
-            latency: elapsed_since(started_at), circuit_state: circuit_for(candidate).state
-          )
+          record_health(candidate) do |health|
+            health.record_success(latency: elapsed_since(started_at), circuit_state: current_state)
+          end
           emit(type: :attempt, provider: candidate.name, status: :accepted, latency: elapsed_since(started_at))
           return with_attempt(delivery, attempts, candidate.name, :accepted)
         rescue Errors::Base => e
           previous_state = circuit_for(candidate).state
-          circuit_for(candidate).record_failure(e)
-          if previous_state != circuit_for(candidate).state
+          record_circuit(candidate) { |circuit| circuit.record_failure(e) }
+          current_state = circuit_for(candidate).state
+          if previous_state != current_state
             emit(type: :circuit_transition, provider: candidate.name, from: previous_state,
-                 to: circuit_for(candidate).state)
+                 to: current_state)
           end
-          health_for(candidate).record_failure(
-            latency: elapsed_since(started_at), error: e, circuit_state: circuit_for(candidate).state
-          )
+          record_health(candidate) do |health|
+            health.record_failure(latency: elapsed_since(started_at), error: e, circuit_state: current_state)
+          end
           emit(type: :attempt, provider: candidate.name, status: :failed, error: e.category,
                latency: elapsed_since(started_at))
           attempts << attempt_record(candidate.name, :failed, e)
@@ -84,6 +86,8 @@ module Sender
         selected = @election.rank(
           candidates, requirements: requirements, circuits: circuit_map(candidates), health: health_map(candidates)
         )
+        persist_circuits(candidates)
+        persist_health(candidates)
         emit(type: :election, candidates: selected.map(&:name), selected: selected.first&.name)
         return selected unless selected.empty?
 
@@ -105,15 +109,41 @@ module Sender
       end
 
       def circuit_for(provider)
-        @state_store.fetch([:circuit, provider.name]) { CircuitBreaker.new(**@circuit_options) }
+        value = @state_store.fetch([:circuit, provider.name]) { CircuitBreaker.new(**@circuit_options).to_h }
+        value.is_a?(CircuitBreaker) ? value : CircuitBreaker.from_h(value, **@circuit_options)
       end
 
       def health_for(provider)
-        @state_store.fetch([:health, provider.name]) do
-          Health.new(
-            observation_window: @circuit_options.fetch(:observation_window, CircuitBreaker::DEFAULT_OBSERVATION_WINDOW)
-          )
-        end
+        value = @state_store.fetch([:health, provider.name]) { new_health.to_h }
+        value.is_a?(Health) ? value : Health.from_h(value, observation_window: observation_window)
+      end
+
+      def observation_window
+        @circuit_options.fetch(:observation_window, CircuitBreaker::DEFAULT_OBSERVATION_WINDOW)
+      end
+
+      def new_health
+        Health.new(observation_window: observation_window)
+      end
+
+      def record_circuit(provider)
+        circuit = circuit_for(provider)
+        yield circuit
+        @state_store.write([:circuit, provider.name], circuit.to_h)
+      end
+
+      def record_health(provider)
+        health = health_for(provider)
+        yield health
+        @state_store.write([:health, provider.name], health.to_h)
+      end
+
+      def persist_circuits(providers)
+        providers.each { |provider| @state_store.write([:circuit, provider.name], circuit_for(provider).to_h) }
+      end
+
+      def persist_health(providers)
+        providers.each { |provider| @state_store.write([:health, provider.name], health_for(provider).to_h) }
       end
 
       def elapsed_since(started_at)

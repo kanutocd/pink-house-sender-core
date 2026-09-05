@@ -74,11 +74,14 @@ module Sender
       end
 
       class TestRedis < Minitest::Test
+        include StateStoreContract
+
         class FakeRedis
           attr_reader :values
 
-          def initialize
+          def initialize(conflicts: 0)
             @values = {}
+            @conflicts = conflicts
             @transaction_key = nil
             @transaction = nil
           end
@@ -92,6 +95,8 @@ module Sender
             when "WATCH" then @transaction_key = arguments.first
             when "MULTI" then @transaction = true
             when "EXEC"
+              return nil if @conflicts.positive? && (@conflicts -= 1) >= 0
+
               @transaction = false
               []
             when "UNWATCH" then @transaction_key = nil
@@ -123,10 +128,40 @@ module Sender
           assert_nil store.read(:count)
         end
 
+        def test_retries_an_optimistic_transaction_conflict
+          store = Redis.new(redis: FakeRedis.new(conflicts: 1))
+
+          assert_equal 3, store.update(:count, default: 1) { |value| value + 1 }
+        end
+
+        def test_clears_only_its_namespace
+          redis = FakeRedis.new
+          store = Redis.new(redis: redis, namespace: "app")
+          store.write(:one, 1)
+          Redis.new(redis: redis, namespace: "other").write(:two, 2)
+
+          assert_nil store.clear
+          assert_nil store.read(:one)
+          assert_equal 2, Redis.new(redis: redis, namespace: "other").read(:two)
+        end
+
+        def test_rejects_malformed_redis_state
+          redis = FakeRedis.new
+          redis.values["sender-core:broken"] = "not-json"
+
+          assert_raises(Error) { Redis.new(redis: redis).read(:broken) }
+        end
+
         def test_validates_redis_configuration
           assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, namespace: "") }
           assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, ttl: 0) }
           assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, max_retries: 0) }
+        end
+
+        private
+
+        def build_state_store
+          Redis.new(redis: FakeRedis.new)
         end
       end
     end
