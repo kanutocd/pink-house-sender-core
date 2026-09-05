@@ -19,6 +19,7 @@
   and optimistic atomic updates through an injected Redis client.
 - Add serializable circuit-breaker and health snapshots and persist them through
   the router for shared state-store backends.
+- Add atomic router state updates and normalized Redis backend errors.
 
 ### Quality
 

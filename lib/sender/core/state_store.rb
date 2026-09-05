@@ -35,6 +35,9 @@ module Sender
 
       # Redis-backed state store for process-shared primitive state.
       class Redis
+        # Error raised when the Redis backend cannot complete an operation.
+        class BackendError < ::Sender::Core::Error; end
+
         # @param redis [#call] Redis client exposing command calls
         # @param namespace [String] key namespace shared by this store
         # @param ttl [Integer, nil] optional key lifetime in seconds
@@ -48,14 +51,14 @@ module Sender
 
         # @return [Object, nil] decoded value
         def read(key)
-          decode(@redis.call("GET", redis_key(key)))
+          decode(redis_call("GET", redis_key(key)))
         end
 
         # @return [Object] stored value
         def write(key, value)
           command = ["SET", redis_key(key), encode(value)]
           command.push("EX", @ttl) if @ttl
-          @redis.call(*command)
+          redis_call(*command)
           value
         end
 
@@ -74,17 +77,17 @@ module Sender
           attempts = 0
           loop do
             attempts += 1
-            @redis.call("WATCH", redis_key)
-            current = decode(@redis.call("GET", redis_key))
+            redis_call("WATCH", redis_key)
+            current = decode(redis_call("GET", redis_key))
             value = yield(current.nil? ? default : current)
-            @redis.call("MULTI")
+            redis_call("MULTI")
             command = ["SET", redis_key, encode(value)]
             command.push("EX", @ttl) if @ttl
-            @redis.call(*command)
-            return value unless @redis.call("EXEC").nil?
+            redis_call(*command)
+            return value unless redis_call("EXEC").nil?
             raise Error, "Redis state update exceeded retry limit" if attempts >= @max_retries
           rescue StandardError
-            @redis.call("UNWATCH")
+            redis_call("UNWATCH")
             raise
           end
         end
@@ -92,7 +95,7 @@ module Sender
         # @return [Object, nil] deleted value
         def delete(key)
           value = read(key)
-          @redis.call("DEL", redis_key(key))
+          redis_call("DEL", redis_key(key))
           value
         end
 
@@ -100,14 +103,20 @@ module Sender
         def clear
           cursor = "0"
           loop do
-            cursor, keys = @redis.call("SCAN", cursor, "MATCH", "#{@namespace}:*")
-            @redis.call("DEL", *keys) unless keys.empty?
+            cursor, keys = redis_call("SCAN", cursor, "MATCH", "#{@namespace}:*")
+            redis_call("DEL", *keys) unless keys.empty?
             break if cursor.to_s == "0"
           end
           nil
         end
 
         private
+
+        def redis_call(*command)
+          @redis.call(*command)
+        rescue StandardError => e
+          raise BackendError, "Redis state store operation failed: #{e.message}"
+        end
 
         def redis_key(key)
           Contract.validate_key!(key)

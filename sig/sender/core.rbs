@@ -94,6 +94,9 @@ module Sender
       end
 
       class Redis
+        class BackendError < ::Sender::Core::Error
+        end
+
         def initialize: (redis: untyped, ?namespace: String, ?ttl: Integer?, ?max_retries: Integer) -> void
         def read: (untyped key) -> untyped
         def write: (untyped key, untyped value) -> untyped

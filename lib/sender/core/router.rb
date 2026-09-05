@@ -127,15 +127,19 @@ module Sender
       end
 
       def record_circuit(provider)
-        circuit = circuit_for(provider)
-        yield circuit
-        @state_store.write([:circuit, provider.name], circuit.to_h)
+        @state_store.update([:circuit, provider.name], default: CircuitBreaker.new(**@circuit_options).to_h) do |value|
+          circuit = value.is_a?(CircuitBreaker) ? value : CircuitBreaker.from_h(value, **@circuit_options)
+          yield circuit
+          circuit.to_h
+        end
       end
 
       def record_health(provider)
-        health = health_for(provider)
-        yield health
-        @state_store.write([:health, provider.name], health.to_h)
+        @state_store.update([:health, provider.name], default: new_health.to_h) do |value|
+          health = value.is_a?(Health) ? value : Health.from_h(value, observation_window: observation_window)
+          yield health
+          health.to_h
+        end
       end
 
       def persist_circuits(providers)
