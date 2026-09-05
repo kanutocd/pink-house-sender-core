@@ -3,7 +3,7 @@
 require_relative "lib/sender/core/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "sender-core"
+  spec.name = "pink-house-sender-core"
   spec.version = Sender::Core::VERSION
   spec.authors = ["Ken C. Demanawa"]
   spec.email = ["kenneth.c.demanawa@gmail.com"]
@@ -14,14 +14,14 @@ Gem::Specification.new do |spec|
     routing, failover, resilience, state, and observability primitives for
     Ruby channel gems such as sms-sender and email-sender.
   DESCRIPTION
-  spec.homepage = "https://kanutocd.github.io/sender-core"
+  spec.homepage = "https://kanutocd.github.io/pink-house-sender-core"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.2.0"
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/kanutocd/sender-core"
-  spec.metadata["changelog_uri"] = "https://github.com/kanutocd/sender-core/blob/main/CHANGELOG.md"
-  spec.metadata["bug_tracker_uri"] = "https://github.com/kanutocd/sender-core/issues"
+  spec.metadata["source_code_uri"] = "https://github.com/kanutocd/pink-house-sender-core"
+  spec.metadata["changelog_uri"] = "https://github.com/kanutocd/pink-house-sender-core/blob/main/CHANGELOG.md"
+  spec.metadata["bug_tracker_uri"] = "https://github.com/kanutocd/pink-house-sender-core/issues"
   spec.metadata["rubygems_mfa_required"] = "true"
 
   # Uncomment the line below to require MFA for gem pushes.
