@@ -19,6 +19,7 @@ Metrics/MethodLength:
     - "lib/sender/core/http.rb"
     - "lib/sender/core/router.rb"
     - "lib/sender/core/delivery.rb"
+    - "lib/sender/core/state_store.rb"
 
 Metrics/AbcSize:
   Exclude:
@@ -26,6 +27,7 @@ Metrics/AbcSize:
     - "lib/sender/core/http.rb"
     - "lib/sender/core/router.rb"
     - "lib/sender/core/delivery.rb"
+    - "lib/sender/core/state_store.rb"
 
 Metrics/ParameterLists:
   Exclude:
@@ -36,10 +38,13 @@ Metrics/ParameterLists:
 Metrics/CyclomaticComplexity:
   Exclude:
     - "lib/sender/core/router.rb"
+    - "lib/sender/core/state_store.rb"
+    - "test/sender/**/*.rb"
 
 Metrics/PerceivedComplexity:
   Exclude:
     - "lib/sender/core/router.rb"
+    - "lib/sender/core/state_store.rb"
 
 Metrics/BlockLength:
   Exclude:

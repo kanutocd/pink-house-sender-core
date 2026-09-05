@@ -72,6 +72,63 @@ module Sender
           assert_includes error.message, "update"
         end
       end
+
+      class TestRedis < Minitest::Test
+        class FakeRedis
+          attr_reader :values
+
+          def initialize
+            @values = {}
+            @transaction_key = nil
+            @transaction = nil
+          end
+
+          def call(command, *arguments)
+            case command
+            when "GET" then @values[arguments.first]
+            when "SET" then set(arguments)
+            when "DEL" then arguments.each { |key| @values.delete(key) }.length
+            when "SCAN" then ["0", @values.keys.select { |key| key.start_with?(arguments[2].delete_suffix("*")) }]
+            when "WATCH" then @transaction_key = arguments.first
+            when "MULTI" then @transaction = true
+            when "EXEC"
+              @transaction = false
+              []
+            when "UNWATCH" then @transaction_key = nil
+            end
+          end
+
+          private
+
+          def set(arguments)
+            @values[arguments[0]] = arguments[1]
+            "OK"
+          end
+        end
+
+        def test_serializes_and_namespaces_values
+          redis = FakeRedis.new
+          store = Redis.new(redis: redis, namespace: "app", ttl: 60)
+
+          assert_equal({ count: 1 }, store.write(:health, { count: 1 }))
+          assert_equal({ "count" => 1 }, store.read(:health))
+          assert_equal ["app:health"], redis.values.keys
+        end
+
+        def test_updates_and_deletes_values
+          store = Redis.new(redis: FakeRedis.new)
+
+          assert_equal 2, store.update(:count, default: 1) { |value| value + 1 }
+          assert_equal 2, store.delete(:count)
+          assert_nil store.read(:count)
+        end
+
+        def test_validates_redis_configuration
+          assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, namespace: "") }
+          assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, ttl: 0) }
+          assert_raises(ArgumentError) { Redis.new(redis: FakeRedis.new, max_retries: 0) }
+        end
+      end
     end
   end
 end

@@ -92,6 +92,16 @@ module Sender
         def delete: (untyped key) -> untyped
         def clear: () -> untyped
       end
+
+      class Redis
+        def initialize: (redis: untyped, ?namespace: String, ?ttl: Integer?, ?max_retries: Integer) -> void
+        def read: (untyped key) -> untyped
+        def write: (untyped key, untyped value) -> untyped
+        def fetch: (untyped key) { () -> untyped } -> untyped
+        def update: (untyped key, ?default: untyped) { (untyped) -> untyped } -> untyped
+        def delete: (untyped key) -> untyped
+        def clear: () -> nil
+      end
     end
   end
 end
