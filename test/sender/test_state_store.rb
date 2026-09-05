@@ -40,6 +40,26 @@ module Sender
 
           assert_equal 1, values.map(&:object_id).uniq.length
         end
+
+        def test_updates_values_atomically
+          store = Memory.new
+          threads = 10.times.map do
+            Thread.new { 100.times { store.update(:count, default: 0) { |value| value + 1 } } }
+          end
+          threads.each(&:join)
+
+          assert_equal 1_000, store.read(:count)
+        end
+
+        def test_validates_the_state_store_contract
+          store = Memory.new
+
+          assert_same store, Contract.validate!(store)
+          error = assert_raises(ArgumentError) { Contract.validate!(Object.new) }
+
+          assert_includes error.message, "read"
+          assert_includes error.message, "update"
+        end
       end
     end
   end

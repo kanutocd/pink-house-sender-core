@@ -12,6 +12,8 @@
   normalized network and timeout errors.
 - Add the shared runtime integration boundary used by channel gems such as
   `sms-sender` and `email-sender`.
+- Add a documented state-store contract and atomic memory-backend updates for
+  future Redis and custom backend implementations.
 
 ### Quality
 
