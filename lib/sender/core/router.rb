@@ -165,7 +165,7 @@ module Sender
       def with_attempt(delivery, attempts, provider, status)
         Delivery.new(
           status: delivery.status,
-          provider: delivery.provider,
+          provider: provider,
           provider_message_id: delivery.provider_message_id,
           attempts: attempts + [attempt_record(provider, status)],
           error: delivery.error,

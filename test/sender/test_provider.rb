@@ -21,9 +21,9 @@ module Sender
       end
 
       def test_support_level_is_advisory_metadata
-        configuration = ProviderConfiguration.new(name: :provider).with_support_level(:deprecated)
+        configuration = ProviderConfiguration.new(name: :provider).with_support_level(:unsupported)
 
-        assert_equal :deprecated, Provider.new(configuration:).support_level
+        assert_equal :unsupported, Provider.new(configuration:).support_level
       end
 
       def test_requires_adapters_to_implement_delivery

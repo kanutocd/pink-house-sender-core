@@ -5,7 +5,7 @@ module Sender
     # Catalogs, configures, and lazily loads provider adapters.
     class ProviderRegistry
       # Internal metadata for a registered provider.
-      Entry = Struct.new(:name, :loader, :capabilities, :support_level, keyword_init: true) do
+      Entry = Struct.new(:name, :adapter, :loader, :capabilities, :support_level, keyword_init: true) do
         def load
           adapter = loader.call
           raise Errors::ConfigurationError, "provider #{name} loader did not return a class" unless adapter.is_a?(Class)
@@ -41,30 +41,30 @@ module Sender
       # @return [Hash] advisory metadata for a registered provider
       def provider_metadata(name)
         entry = fetch_entry(name)
-        {
-          name: entry.name,
-          capabilities: entry.capabilities,
-          support_level: entry.support_level
-        }.freeze
+        { name: entry.name, adapter: entry.adapter, capabilities: entry.capabilities,
+          support_level: entry.support_level }.freeze
       end
 
       # Register a provider without loading its adapter.
       # @param name [Symbol, String] provider name
       # @param loader [#call] callable returning the adapter class
-      # @param capabilities [Array<Symbol>] advertised capabilities
-      # @param support_level [Symbol] advisory integration maturity metadata
-      def register(name, loader:, capabilities: [:sms], support_level: :unknown)
+      def register(name, loader:, capabilities: [:sms], support_level: :unknown, adapter: nil)
         provider_name = normalize_name(name)
         raise ArgumentError, "loader must respond to call" unless loader.respond_to?(:call)
         raise ArgumentError, "provider already registered: #{provider_name}" if @entries.key?(provider_name)
 
         @entries[provider_name] = Entry.new(
-          name: provider_name,
-          loader: loader,
-          capabilities: Capabilities.normalize(capabilities),
-          support_level: normalize_support_level(support_level)
+          name: provider_name, adapter: normalize_name(adapter || provider_name), loader: loader,
+          capabilities: Capabilities.normalize(capabilities), support_level: normalize_support_level(support_level)
         ).freeze
         provider_name
+      end
+
+      # Register a named instance backed by an existing provider adapter.
+      # @return [Symbol] configured provider instance name
+      def register_alias(name, source:)
+        source_entry = fetch_entry(source)
+        register(name, **source_entry.to_h.slice(:loader, :capabilities, :support_level, :adapter))
       end
 
       # Configure a registered provider without loading its adapter.
@@ -104,8 +104,7 @@ module Sender
         return [definition, :unknown] unless definition.is_a?(Hash)
 
         path = definition.fetch(:path) { definition.fetch("path") }
-        support_level = definition[:support_level] || definition["support_level"] || :unknown
-        [path, support_level]
+        [path, definition[:support_level] || definition["support_level"] || :unknown]
       end
 
       def fetch_entry(name)

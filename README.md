@@ -46,6 +46,13 @@ health, circuit breaker, state store, and observability
 
 `sender-core` is not a standalone email or SMS client. It supplies the
 provider-neutral runtime that channel gems compose into their public APIs.
+Provider registries may expose an advisory `support_level` such as
+`experimental`, `supported`, `fully_tested`, `deprecated`, or `unsupported`.
+This metadata is informational only and never prevents a configured provider
+from being used.
+Registries also support named instances backed by the same adapter, allowing
+multiple accounts to participate independently in priorities, fallback, and
+runtime health state.
 
 ## Usage
 

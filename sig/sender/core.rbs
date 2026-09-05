@@ -87,7 +87,8 @@ module Sender
       def supported: () -> Array[Symbol]
       def configured: () -> Array[Symbol]
       def provider_metadata: (Symbol | String name) -> Hash[Symbol, untyped]
-      def register: (Symbol | String name, loader: ^() -> Class, ?capabilities: Array[Symbol], ?support_level: Symbol | String) -> Symbol
+      def register: (Symbol | String name, loader: ^() -> Class, ?capabilities: Array[Symbol], ?support_level: Symbol | String, ?adapter: Symbol | String?) -> Symbol
+      def register_alias: (Symbol | String name, source: Symbol | String) -> Symbol
       def configure: (Symbol | String name, ?settings: Hash[untyped, untyped], ?enabled: bool, ?priority: Integer, ?capabilities: Array[Symbol]?) -> ProviderConfiguration
       def provider: (Symbol | String name) -> Provider
       def providers: () -> Array[Provider]

@@ -46,6 +46,17 @@ module Sender
         assert_equal [:fake], registry.configured
       end
 
+      def test_registers_named_instances_from_an_existing_adapter
+        registry = ProviderRegistry.new(catalog: {})
+        registry.register(:textbee, loader: -> { FakeProvider }, capabilities: [:sms], support_level: :supported)
+        registry.register_alias(:textbee_backup, source: :textbee)
+        configuration = registry.configure(:textbee_backup, settings: { token: "backup" })
+
+        assert_equal :textbee_backup, configuration.name
+        assert_equal :textbee, registry.provider_metadata(:textbee_backup).fetch(:adapter)
+        assert_instance_of FakeProvider, registry.provider(:textbee_backup)
+      end
+
       def test_returns_all_configured_provider_instances
         registry = ProviderRegistry.new(catalog: {})
         registry.register(:first, loader: -> { FakeProvider })

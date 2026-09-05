@@ -5,7 +5,7 @@ module Sender
     # Immutable configuration shared by provider adapters.
     class ProviderConfiguration
       # Advisory integration maturity values exposed by provider registries.
-      SUPPORT_LEVELS = %i[unknown experimental supported fully_tested deprecated].freeze
+      SUPPORT_LEVELS = %i[unknown experimental supported fully_tested deprecated unsupported].freeze
 
       attr_reader :name, :settings, :enabled, :priority, :capabilities, :support_level
 

@@ -2,6 +2,8 @@
 
 ### Added
 
+- Add named provider instances backed by reusable adapters.
+- Add `unsupported` as an advisory provider support level.
 - Add advisory provider `support_level` metadata and registry inspection
   without using it to enable, disable, or route providers.
 - Provider-neutral message, delivery, capability, delivery-event, and
