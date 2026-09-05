@@ -14,6 +14,7 @@
   `sms-sender` and `email-sender`.
 - Add a documented state-store contract and atomic memory-backend updates for
   future Redis and custom backend implementations.
+- Add reusable state-store contract tests and deterministic non-nil key rules.
 
 ### Quality
 

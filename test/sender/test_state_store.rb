@@ -1,11 +1,22 @@
 # frozen_string_literal: true
 
 require "test_helper"
+require "support/state_store_contract"
 
 module Sender
   module Core
     module StateStore
       class TestMemory < Minitest::Test
+        include StateStoreContract
+
+        private
+
+        def build_state_store
+          Memory.new
+        end
+
+        public
+
         def test_reads_writes_fetches_and_deletes_values
           store = Memory.new
 
