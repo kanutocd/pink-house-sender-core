@@ -8,7 +8,7 @@ Gem::Specification.new do |spec|
   spec.authors = ["Ken C. Demanawa"]
   spec.email = ["kenneth.c.demanawa@gmail.com"]
 
-  spec.summary = "Channel-neutral delivery runtime for Ruby sender gems"
+  spec.summary = "Channel-neutral delivery runtime for Ruby sms-sender and email-sender gems"
   spec.description = <<~DESCRIPTION
     Sender Core provides provider-neutral message delivery contracts,
     routing, failover, resilience, state, and observability primitives for
