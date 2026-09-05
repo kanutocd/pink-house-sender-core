@@ -11,3 +11,11 @@ Style/StringLiterals:
 
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
+
+Metrics/ParameterLists:
+  Exclude:
+    - "lib/sender/core/delivery.rb"
+
+Metrics/MethodLength:
+  Exclude:
+    - "test/sender/test_message.rb"

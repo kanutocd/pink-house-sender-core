@@ -1,6 +1,77 @@
 module Sender
   module Core
+    class Error < StandardError
+    end
+
     VERSION: String
-    # See the writing guide of rbs: https://github.com/ruby/rbs#guides
+
+    module Capabilities
+      KNOWN: Array[Symbol]
+
+      def self.normalize: (Array[Symbol | String] values) -> Array[Symbol]
+    end
+
+    module Errors
+      FAILOVER_CATEGORIES: Array[Symbol]
+      RETRYABLE_CATEGORIES: Array[Symbol]
+
+      class Base < Error
+        attr_reader category: Symbol
+        attr_reader provider: Symbol?
+
+        def initialize: (?String?, ?category: Symbol?, ?provider: Symbol?) -> void
+        def retryable?: () -> bool
+        def failover?: () -> bool
+      end
+
+      class ProviderError < Base
+      end
+      class Network < ProviderError
+      end
+      class Timeout < ProviderError
+      end
+      class RateLimited < ProviderError
+      end
+      class Authentication < ProviderError
+      end
+      class Authorization < ProviderError
+      end
+      class InvalidRequest < Base
+      end
+      class InvalidRecipient < Base
+      end
+      class ProviderUnavailable < ProviderError
+      end
+      class ProviderRejected < Base
+      end
+      class Unknown < Base
+      end
+      class ConfigurationError < Base
+      end
+    end
+
+    class Message
+      attr_reader to: String
+      attr_reader body: String
+      attr_reader metadata: Hash[untyped, untyped]
+      attr_reader requirements: Array[Symbol]
+
+      def initialize: (to: String, body: String, ?metadata: Hash[untyped, untyped], ?requirements: Array[Symbol | String]) -> void
+    end
+
+    class Delivery
+      STATUSES: Array[Symbol]
+      attr_reader status: Symbol
+      attr_reader provider: Symbol?
+      attr_reader provider_message_id: String?
+      attr_reader attempts: Array[Hash[untyped, untyped]]
+      attr_reader error: Errors::Base?
+      attr_reader metadata: Hash[untyped, untyped]
+
+      def initialize: (?status: Symbol | String, ?provider: Symbol | String?, ?provider_message_id: untyped, ?attempts: Array[Hash[untyped, untyped]], ?error: Errors::Base?, ?metadata: Hash[untyped, untyped]) -> void
+      def accepted?: () -> bool
+      def delivered?: () -> bool
+      def failed?: () -> bool
+    end
   end
 end

@@ -11,3 +11,8 @@ module Sender
     class Error < StandardError; end
   end
 end
+
+require_relative "core/capabilities"
+require_relative "core/errors"
+require_relative "core/message"
+require_relative "core/delivery"
