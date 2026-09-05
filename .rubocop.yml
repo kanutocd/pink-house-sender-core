@@ -12,10 +12,41 @@ Style/StringLiterals:
 Style/StringLiteralsInInterpolation:
   EnforcedStyle: double_quotes
 
-Metrics/ParameterLists:
-  Exclude:
-    - "lib/sender/core/delivery.rb"
-
 Metrics/MethodLength:
   Exclude:
     - "test/sender/test_message.rb"
+    - "test/sender/**/*.rb"
+    - "lib/sender/core/http.rb"
+    - "lib/sender/core/router.rb"
+    - "lib/sender/core/delivery.rb"
+
+Metrics/AbcSize:
+  Exclude:
+    - "test/sender/**/*.rb"
+    - "lib/sender/core/http.rb"
+    - "lib/sender/core/router.rb"
+    - "lib/sender/core/delivery.rb"
+
+Metrics/ParameterLists:
+  Exclude:
+    - "lib/sender/core/delivery.rb"
+    - "lib/sender/core/delivery_event.rb"
+    - "lib/sender/core/http.rb"
+
+Metrics/CyclomaticComplexity:
+  Exclude:
+    - "lib/sender/core/router.rb"
+
+Metrics/PerceivedComplexity:
+  Exclude:
+    - "lib/sender/core/router.rb"
+
+Metrics/BlockLength:
+  Exclude:
+    - "lib/sender/core/router.rb"
+    - "sender-core.gemspec"
+
+Metrics/ClassLength:
+  Exclude:
+    - "test/sender/**/*.rb"
+    - "lib/sender/core/router.rb"

@@ -72,6 +72,7 @@ module Sender
       def accepted?: () -> bool
       def delivered?: () -> bool
       def failed?: () -> bool
+      def with_event: (DeliveryEvent event) -> Delivery
     end
   end
 end
