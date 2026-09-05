@@ -18,11 +18,12 @@ module Sender
       DEFAULT_PROVIDERS = {}.freeze
 
       # @param catalog [Hash] provider names mapped to adapter paths
-      def initialize(catalog: DEFAULT_PROVIDERS)
+      # @param default_capabilities [Array<Symbol>] catalog entry capabilities
+      def initialize(catalog: DEFAULT_PROVIDERS, default_capabilities: [])
         @entries = {}
         @configurations = {}
         catalog.each do |name, path|
-          register(name, loader: lazy_loader(path), capabilities: [:sms])
+          register(name, loader: lazy_loader(path), capabilities: default_capabilities)
         end
       end
 
